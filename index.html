@@ -349,27 +349,43 @@ function ladiesSummaryLines(){
 }
 function ladiesQuoteText(){const q=ladiesQuoteData();return `${q.name}\nLADIES PROTECTION — QUICK QUOTATION\n\nProspect Details\nAge: ${q.age==null?"—":q.age}\nDate of Birth: ${formatDob(q.dob)}\nSelected Plan: ${q.planName}\n\n${ladiesSummaryLines().join("\n")}\n\nEstimated Monthly Contribution: ${q.rate==null?"Rate unavailable":money(q.rate)+" / month"}\n\nDISCLAIMER\nIndicative quotation only. Final contribution is subject to eligibility, underwriting, certificate terms and conditions, exclusions, and the applicable official quotation.`}
 function copyLadiesQuote(){const txt=ladiesQuoteText();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>{generateLadiesPdf();showToast("Ladies quote copied + PDF generated")}).catch(()=>{generateLadiesPdf();showToast("PDF generated; copy unavailable")})}else{generateLadiesPdf();showToast("PDF generated; copy unavailable")}}
+```javascript
 function generateLadiesPdf(){
   const q=ladiesQuoteData();
-  const safeAscii = s => String(s).replace(/•/g,"-").replace(/[—–]/g,"-").replace(/[’‘]/g,"'").replace(/[“”]/g,'"').replace(/…/g,"...");
+  const safeAscii=s=>String(s)
+    .replace(/•/g,"-")
+    .replace(/[—–]/g,"-")
+    .replace(/[’‘]/g,"'")
+    .replace(/[“”]/g,'"')
+    .replace(/…/g,"...");
+
   const rawLines=[
-  "JOM QUOTE",
-  "LADIES PROTECTION - QUICK QUOTATION",
-  "",
-  "MUQMEEN GROUP",
-  "Agent: JAMALUDIN ALIAS",
-  "Agent Code: MDN00017",
-  "",
-  "PROSPECT DETAILS",
-    `Name: ${q.name}`,`Age: ${q.age==null?"-":q.age}`,`Date of Birth: ${formatDob(q.dob)}`,
-    `Selected Plan: ${q.planName}`,"",...ladiesSummaryLines(),"",
+    "JOM QUOTE",
+    "LADIES PROTECTION - QUICK QUOTATION",
+    "MUQMEEN GROUP",
+    "Agent: JAMALUDIN ALIAS",
+    "Agent Code: MDN00017",
+    "",
+    "PROSPECT DETAILS",
+    `Name: ${q.name}`,
+    `Age: ${q.age==null?"-":q.age}`,
+    `Date of Birth: ${formatDob(q.dob)}`,
+    `Selected Plan: ${q.planName}`,
+    "",
+    ...ladiesSummaryLines(),
+    "",
     `ESTIMATED MONTHLY CONTRIBUTION: ${q.rate==null?"Rate unavailable":money(q.rate)+" / month"}`,
-    "","DISCLAIMER",
-    "Indicative quotation only. Final contribution is subject to eligibility, underwriting, certificate terms and conditions, exclusions, and the applicable official quotation."
+    "",
+    "DISCLAIMER",
+    "Indicative quotation only. Final contribution is subject to eligibility,",
+    "underwriting, certificate terms and conditions, exclusions, and the",
+    "applicable official quotation."
   ].map(safeAscii);
+
   const wrap=(s,max=82)=>{
     if(!s) return [""];
-    const words=s.split(/\s+/),out=[]; let line="";
+    const words=s.split(/\s+/),out=[];
+    let line="";
     for(const word of words){
       if(!line) line=word;
       else if((line+" "+word).length<=max) line+=" "+word;
@@ -378,55 +394,122 @@ function generateLadiesPdf(){
     if(line) out.push(line);
     return out;
   };
+
   const lines=[];
   for(const raw of rawLines){
-    const bold=raw==="JOM QUOTE"||raw==="LADIES PROTECTION - QUICK QUOTATION"||raw.startsWith("ESTIMATED MONTHLY")||raw.endsWith("DETAILS")||raw.startsWith("PLAN SUMMARY")||raw==="DISCLAIMER";
+    const bold=
+      raw==="JOM QUOTE" ||
+      raw==="LADIES PROTECTION - QUICK QUOTATION" ||
+      raw.startsWith("ESTIMATED MONTHLY") ||
+      raw==="PROSPECT DETAILS" ||
+      raw==="DISCLAIMER" ||
+      raw==="PLAN SUMMARY" ||
+      raw==="LADIES PROTECTION BENEFITS";
+
     const wrapped=wrap(raw,bold?58:82);
-    wrapped.forEach((line,i)=>lines.push({line,bold: bold && i===0,indent:raw.startsWith("- ")&&i>0}));
+    wrapped.forEach((line,i)=>{
+      lines.push({
+        line,
+        bold:bold && i===0,
+        indent:raw.startsWith("  ") || (raw.startsWith("- ") && i>0)
+      });
+    });
   }
-  const pageW=595,pageH=842,left=48,top=790,bottom=48,lineH=16,chunks=[];
+
+  const pageW=595,pageH=842,left=48,top=790,bottom=48,lineH=16;
+  const chunks=[];
   let current=[],y=top;
+
   for(const item of lines){
-    const h=(item.bold&&(item.line==="JOM QUOTE"||item.line==="LADIES PROTECTION - QUICK QUOTATION"||item.line.startsWith("ESTIMATED MONTHLY")))?22:lineH;
-    if(y-h<bottom){chunks.push(current);current=[];y=top;}
-    current.push({...item,y}); y-=h;
+    const h=(
+      item.line==="JOM QUOTE" ||
+      item.line==="LADIES PROTECTION - QUICK QUOTATION" ||
+      item.line.startsWith("ESTIMATED MONTHLY")
+    )?20:lineH;
+
+    if(y-h<bottom){
+      chunks.push(current);
+      current=[];
+      y=top;
+    }
+
+    current.push({...item,y});
+    y-=h;
   }
+
   if(current.length) chunks.push(current);
+
   const objects=[
     "<< /Type /Catalog /Pages 2 0 R >>",
     "",
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>"
   ];
+
   const pageNums=[];
+
   chunks.forEach(page=>{
     const content=["BT"];
+
     page.forEach(item=>{
-      const size=item.bold?(item.line.startsWith("ESTIMATED")?15:item.line==="JOM QUOTE"?18:12):10;
+      const size=item.bold
+        ?(item.line.startsWith("ESTIMATED")?16:item.line==="JOM QUOTE"?18:13)
+        :10;
+
       content.push(`/${item.bold?"FB":"FR"} ${size} Tf`);
       content.push(`1 0 0 1 ${left+(item.indent?14:0)} ${item.y} Tm`);
       content.push(`(${pdfEscape(item.line)}) Tj`);
     });
+
     content.push("ET");
     const stream=content.join("\n");
     const contentObj=objects.length+1;
-    objects.push(`<< /Length ${new TextEncoder().encode(stream).length} >>\nstream\n${stream}\nendstream`);
+
+    objects.push(
+      `<< /Length ${new TextEncoder().encode(stream).length} >>\nstream\n${stream}\nendstream`
+    );
+
     const pageObj=objects.length+1;
-    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /Font << /FR 3 0 R /FB 4 0 R >> >> /Contents ${contentObj} 0 R >>`);
+
+    objects.push(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /Font << /FR 3 0 R /FB 4 0 R >> >> /Contents ${contentObj} 0 R >>`
+    );
+
     pageNums.push(pageObj);
   });
+
   objects[1]=`<< /Type /Pages /Kids [${pageNums.map(n=>n+" 0 R").join(" ")}] /Count ${pageNums.length} >>`;
-  let pdf="%PDF-1.4\n"; const offsets=[0];
-  objects.forEach((obj,i)=>{offsets.push(new TextEncoder().encode(pdf).length);pdf+=`${i+1} 0 obj\n${obj}\nendobj\n`;});
+
+  let pdf="%PDF-1.4\n";
+  const offsets=[0];
+
+  objects.forEach((obj,i)=>{
+    offsets.push(new TextEncoder().encode(pdf).length);
+    pdf+=`${i+1} 0 obj\n${obj}\nendobj\n`;
+  });
+
   const xref=new TextEncoder().encode(pdf).length;
   pdf+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
-  for(let i=1;i<offsets.length;i++) pdf+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";
+
+  for(let i=1;i<offsets.length;i++){
+    pdf+=String(offsets[i]).padStart(10,"0")+" 00000 n \n";
+  }
+
   pdf+=`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  const blob=new Blob([pdf],{type:"application/pdf"}),url=URL.createObjectURL(blob),a=document.createElement("a");
-  a.href=url;a.download=`Jom-Quote-Ladies-${q.planName.replace(/\s/g,"")}.pdf`;
-  document.body.appendChild(a);a.click();a.remove();
+
+  const blob=new Blob([pdf],{type:"application/pdf"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+
+  a.href=url;
+  a.download=`Jom-Quote-Ladies-${q.planName.replace(/\s/g,"")}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
   setTimeout(()=>URL.revokeObjectURL(url),10000);
 }
+```
 function printLadiesQuote(){generateLadiesPdf()}
 function resetLadiesQuote(){document.getElementById("ladiesName").value="";document.getElementById("ladiesDob").value="";selectLadiesPlan("A");document.getElementById("ladiesResult").classList.add("hidden")}
 function quoteData(){
