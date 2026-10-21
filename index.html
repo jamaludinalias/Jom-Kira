@@ -353,7 +353,14 @@ function generateLadiesPdf(){
   const q=ladiesQuoteData();
   const safeAscii = s => String(s).replace(/•/g,"-").replace(/[—–]/g,"-").replace(/[’‘]/g,"'").replace(/[“”]/g,'"').replace(/…/g,"...");
   const rawLines=[
-    "JOM QUOTE","LADIES PROTECTION - QUICK QUOTATION","","PROSPECT DETAILS",
+  "JOM QUOTE",
+  "LADIES PROTECTION - QUICK QUOTATION",
+  "",
+  "MUQMEEN GROUP",
+  "Agent: JAMALUDIN ALIAS",
+  "Agent Code: MDN00017",
+  "",
+  "PROSPECT DETAILS",
     `Name: ${q.name}`,`Age: ${q.age==null?"-":q.age}`,`Date of Birth: ${formatDob(q.dob)}`,
     `Selected Plan: ${q.planName}`,"",...ladiesSummaryLines(),"",
     `ESTIMATED MONTHLY CONTRIBUTION: ${q.rate==null?"Rate unavailable":money(q.rate)+" / month"}`,
