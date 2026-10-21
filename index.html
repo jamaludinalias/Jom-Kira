@@ -349,7 +349,7 @@ function ladiesSummaryLines(){
 }
 function ladiesQuoteText(){const q=ladiesQuoteData();return `${q.name}\nLADIES PROTECTION — QUICK QUOTATION\n\nProspect Details\nAge: ${q.age==null?"—":q.age}\nDate of Birth: ${formatDob(q.dob)}\nSelected Plan: ${q.planName}\n\n${ladiesSummaryLines().join("\n")}\n\nEstimated Monthly Contribution: ${q.rate==null?"Rate unavailable":money(q.rate)+" / month"}\n\nDISCLAIMER\nIndicative quotation only. Final contribution is subject to eligibility, underwriting, certificate terms and conditions, exclusions, and the applicable official quotation.`}
 function copyLadiesQuote(){const txt=ladiesQuoteText();if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>{generateLadiesPdf();showToast("Ladies quote copied + PDF generated")}).catch(()=>{generateLadiesPdf();showToast("PDF generated; copy unavailable")})}else{generateLadiesPdf();showToast("PDF generated; copy unavailable")}}
-```javascript
+
 function generateLadiesPdf(){
   const q=ladiesQuoteData();
   const safeAscii=s=>String(s)
